@@ -3,6 +3,12 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
+    android:elevation="1dp"
+    android:clickable="true"
+    android:focusable="true"
+    android:clipToPadding="false"
+    android:outlineProvider="bounds"
+    android:background="?android:attr/selectableItemBackground"
     android:padding="15dp">
     <TextView
         android:id="@+id/title"

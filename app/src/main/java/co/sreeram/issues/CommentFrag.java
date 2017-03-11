@@ -1,66 +1,68 @@
 package co.sreeram.issues;
 
-import android.net.http.HttpResponseCache;
+import android.app.ProgressDialog;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.support.v4.app.Fragment;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.MenuItem;
+import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.SimpleAdapter;
 import android.widget.Toast;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import java.io.File;
-import java.io.IOException;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 
 /**
- * Created by Sreeram AN on 09/03/2017.
+ * Created by Sreeram AN on 11/03/2017.
  */
 
-public class CommentActivity extends AppCompatActivity {
+public class CommentFrag extends Fragment {
 
-    private String TAG = "CommentActivity";
-    private ListView lv2;
+    private String TAG = "CommentFrag";
+    public CustomAdapter2 myAdapter;
+    private ProgressDialog progress;
+    private RecyclerView myRecyclerView;
     static ArrayList<HashMap<String, String>> commentList;
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_comment);
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+                             Bundle savedInstanceState) {
+        View rootView = inflater.inflate(R.layout.comment_fragment, container, false);
+        ((AppCompatActivity)getActivity()).getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         commentList = new ArrayList<>();
-        lv2 = (ListView) findViewById(R.id.list2);
-        try {
-            File httpCacheDir = new File(getApplicationContext().getCacheDir(), "comment");
-            long httpCacheSize = 1 * 1024 * 1024;
-            HttpResponseCache.install(httpCacheDir, httpCacheSize);
-        } catch (IOException e) {
-            Log.i(TAG, "HTTP response cache installation failed:" + e);
-        }
+        myRecyclerView = (RecyclerView) rootView.findViewById(R.id.recycler2);
+       // lv2 = (ListView) rootView.findViewById(R.id.list);
         new GetComments().execute();
+        return rootView;
     }
-    @Override
-    protected void onStop() {
-        super.onStop();
-        HttpResponseCache cache = HttpResponseCache.getInstalled();
-        if (cache != null) {
-            cache.flush();
-        }
-    }
+
+
     private class GetComments extends AsyncTask<Void, Void, Void> {
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
-            Toast.makeText(CommentActivity.this,"Downloading Comments...",Toast.LENGTH_SHORT).show();
+            progress = new ProgressDialog(getContext());
+            progress.setMessage("Loading...");
+            progress.show();
+            //Toast.makeText(this,"Downloading Comments...",Toast.LENGTH_SHORT).show();
         }
 
         @Override
         protected Void doInBackground(Void... arg0) {
             HttpHandler sh = new HttpHandler();
-            String url=getIntent().getStringExtra("url");
+            Bundle bundle = getArguments();
+            String url = bundle.getString("url");
+            //String url = "https://api.github.com/repos/crashlytics/secureudid/issues/4/comments";
             String jsonStr = sh.makeServiceCall(url);
             if (jsonStr != null) {
                 try {
@@ -84,10 +86,10 @@ public class CommentActivity extends AppCompatActivity {
                     }
                 } catch (final JSONException e) {
                     Log.e(TAG, "Json error: " + e.getMessage());
-                    runOnUiThread(new Runnable() {
+                    getActivity().runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            Toast.makeText(getApplicationContext(),
+                            Toast.makeText(getActivity().getApplicationContext(),
                                     "Parsing error: " + e.getMessage(),
                                     Toast.LENGTH_LONG).show();
                         }
@@ -95,10 +97,10 @@ public class CommentActivity extends AppCompatActivity {
                 }
             } else {
                 Log.e(TAG, "Unable to download from server.");
-                runOnUiThread(new Runnable() {
+                getActivity().runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        Toast.makeText(getApplicationContext(),"Couldn't Download JSON", Toast.LENGTH_LONG).show();
+                        Toast.makeText(getActivity().getApplicationContext(),"Couldn't Download JSON", Toast.LENGTH_LONG).show();
                     }
                 });
             }
@@ -108,12 +110,16 @@ public class CommentActivity extends AppCompatActivity {
         @Override
         protected void onPostExecute(Void result) {
             super.onPostExecute(result);
-            final ListAdapter adapter2 = new SimpleAdapter(CommentActivity.this, commentList,
+            myAdapter = new CustomAdapter2(commentList);
+            RecyclerView.LayoutManager mLayoutManager = new LinearLayoutManager(getActivity().getApplicationContext());
+            myRecyclerView.setLayoutManager(mLayoutManager);
+            myRecyclerView.setAdapter(myAdapter);
+            /*final ListAdapter adapter2 = new SimpleAdapter(getActivity(), commentList,
                     R.layout.list_item2, new String[]{ "login","body"},
                     new int[]{R.id.uname, R.id.comment});
-            lv2.setAdapter(adapter2);
+            lv2.setAdapter(adapter2);*/
+            progress.dismiss();
 
         }
     }
-
 }
